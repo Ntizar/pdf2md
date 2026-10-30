@@ -1,0 +1,18 @@
+# pyproject de pdf2md
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf2md"
+version = "0.1.0"
+description = "PDF a Markdown determinista por visión: pasadas de verificación con VLM y fallback a imagen recortada."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "David Antizar" }]
+dependencies = ["pypdfium2>=4.0", "requests>=2.28"]
+
+[project.scripts]
+pdf2md = "pdf2md.cli:main"

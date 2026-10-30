@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es" data-nz-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pdf2md — PDF a Markdown determinista por visión</title>
+  <meta name="description" content="Conversor de PDF a Markdown determinista: pasadas de verificación con VLM y fallback a imagen recortada. Nada se pierde.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/tokens.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p1-layout.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p2-navigation.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p3-typography.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p4-actions.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.10.0/packs/p6-feedback.css">
+</head>
+<body class="nz">
+
+  <nav class="nz-navbar">
+    <span class="nz-navbar__brand">pdf2md</span>
+    <div class="nz-navbar__links">
+      <a class="nz-navbar__link" href="https://github.com/Ntizar/pdf2md">GitHub</a>
+      <a class="nz-navbar__link" href="#como">Cómo funciona</a>
+      <a class="nz-btn nz-btn--primary nz-btn--sm" href="https://github.com/Ntizar/pdf2md#inicio-r%C3%A1pido">Empezar</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <section class="nz-hero-bleed">
+      <span class="nz-badge nz-badge--accent">v0.1 · open source · MIT</span>
+      <h1 class="nz-h1">PDF a Markdown determinista</h1>
+      <p class="nz-lead">Pasadas de verificación con un modelo de visión hasta que el resultado cuadra. Lo que el modelo no puede reconstruir, se recorta del PDF como imagen. Nada se pierde.</p>
+      <div class="nz-cluster">
+        <a class="nz-btn nz-btn--primary" href="https://github.com/Ntizar/pdf2md#inicio-r%C3%A1pido">Probar ahora</a>
+        <a class="nz-btn nz-btn--outline" href="https://github.com/Ntizar/pdf2md">Ver el código</a>
+      </div>
+    </section>
+
+    <section class="nz-container" id="como">
+      <h2 class="nz-h2">Cómo funciona</h2>
+      <div class="nz-thirds">
+        <article class="nz-article">
+          <span class="nz-lbl">Paso 1</span>
+          <h3 class="nz-h3">Rasteriza y lee</h3>
+          <p class="nz-prose">Cada página se rasteriza a 144 dpi y la lee un modelo de visión (qwen3.6 o cualquier VLM OpenAI-compatible). Cache por página: relanzar nunca repite llamadas.</p>
+        </article>
+        <article class="nz-article">
+          <span class="nz-lbl">Paso 2</span>
+          <h3 class="nz-h3">Verifica de verdad</h3>
+          <p class="nz-prose">Un verificador determinista comprueba el resultado: tablas bien formadas, aritmética de columnas numéricas. Si no cuadra, otra pasada con el informe de errores como feedback. Hasta 3.</p>
+        </article>
+        <article class="nz-article">
+          <span class="nz-lbl">Paso 3</span>
+          <h3 class="nz-h3">Recorta lo imposible</h3>
+          <p class="nz-prose">Los gráficos, mapas y fotos se localizan como objetos nativos del PDF y se recortan a PNG referenciado desde el markdown. Si algo no se puede reconstruir, se ve igual.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="nz-container">
+      <div class="nz-callout" role="note">
+        <strong>¿Por qué determinista?</strong> Los conversores clásicos alucinan tablas fantasma y columnas rotas, y nadie lo nota hasta que un RAG cita el dato mal. Aquí el dato o pasa el verificador o lleva el recorte de la imagen original al lado.
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="nz-footer">
+    <p>Hecho con ❤️ por David Antizar</p>
+  </footer>
+
+</body>
+</html>
