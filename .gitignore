@@ -5,4 +5,6 @@ __pycache__/
 .cache/
 .log.jsonl
 figuras/
+!ejemplos/figuras/
+!ejemplos/figuras/**
 *_md/
