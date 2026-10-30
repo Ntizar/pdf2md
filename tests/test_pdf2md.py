@@ -26,10 +26,39 @@ class TestVerificador:
 """
         inf = verificar_markdown(md)
         assert not inf.ok
-        assert any("celdas" in e for e in inf.errores)
+        assert any("irregular" in e or "celdas" in e for e in inf.errores)
 
     def test_texto_plano_ok(self):
         assert verificar_markdown("Párrafo simple sin tablas.\n\nOtro párrafo.").ok
+
+    def test_serie_temporal_no_es_suma(self):
+        # columnas de objetivos 2030/2040/2050 son series, no sumas: no deben fallar
+        md = """| Indicador | 2030 | 2040 | 2050 |
+|---|---|---|---|
+| Pobreza | 16,1 | 12,7 | 9,2 |
+"""
+        assert verificar_markdown(md).ok
+
+    def test_total_declarado_mal_sumado_detectado(self):
+        md = """| Concepto | Euros |
+|---|---|
+| A | 100 |
+| B | 200 |
+| C | 250 |
+| Total | 400 |
+"""
+        inf = verificar_markdown(md)
+        assert not inf.ok
+        assert any("no cuadra" in e for e in inf.errores)
+
+    def test_total_declarado_bien_sumado_ok(self):
+        md = """| Concepto | Euros |
+|---|---|
+| A | 100 |
+| B | 200 |
+| Total | 300 |
+"""
+        assert verificar_markdown(md).ok
 
 
 class TestFiguras:
