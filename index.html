@@ -63,6 +63,25 @@
       </div>
     </section>
 
+    <section class="nz-container" id="rag">
+      <h2 class="nz-h2">Hecho para LLMs y RAG</h2>
+      <p class="nz-prose">Un LLM trabaja <strong>mejor con el MD que con el PDF</strong>: el PDF obliga a rasterizar página a página (~2k tokens de imagen y segundos por página); el MD entra como texto puro, ~4× más barato y al instante. Y aquí los números ya pasaron el verificador: un RAG que cita este markdown no cita una posible alucinación del primer pase.</p>
+      <div class="nz-thirds">
+        <article class="nz-article">
+          <h3 class="nz-h3">Chunking por estructura</h3>
+          <p class="nz-prose">Encabezados, tablas atómicas y figuras con su OCR en <code>&lt;details&gt;</code>: el MD conserva la semántica que el PDF no tiene. Cada tabla entra entera al contexto, nunca partida.</p>
+        </article>
+        <article class="nz-article">
+          <h3 class="nz-h3">Datos verificados</h3>
+          <p class="nz-prose">Cada tabla pasó la verificación determinista o lleva el PNG original al lado. Las cifras que recupera tu RAG son cifras comprobadas, no la primera lectura del modelo.</p>
+        </article>
+        <article class="nz-article">
+          <h3 class="nz-h3">Multimodal-ready</h3>
+          <p class="nz-prose">Las figuras no extraíbles quedan indexables por descripción/OCR y servibles como imagen al VLM cuando la pregunta lo pide. Re-ranking con el mismo modelo si tu API es OpenAI-compatible.</p>
+        </article>
+      </div>
+    </section>
+
     <section class="nz-container" id="ejemplo">
       <h2 class="nz-h2">Ejemplo real: España 2050</h2>
       <p class="nz-prose">10 páginas del documento oficial <strong>«España 2050 — Fundamentos y propuestas para una Estrategia Nacional de Largo Plazo»</strong> (Presidencia del Gobierno, 2021): el cuadro de 50 indicadores con sus tablas anchas, gráficos vectoriales y retratos. Convertido con pdf2md tal cual, sin retoques.</p>
