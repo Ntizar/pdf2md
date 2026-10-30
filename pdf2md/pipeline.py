@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 
+from .extraccion import bloque_markdown, extraer_figura
 from .figuras import RE_FIGURA, recortar_figuras_pagina
 from .raster import a_base64, num_paginas, rasterizar_pagina
 from .verificador import verificar_markdown
@@ -75,15 +76,16 @@ def convertir_pdf(cliente, ruta_pdf: str | Path, dir_salida: str | Path, dir_cac
                 paginas_md[indice] = hechas[pag]["md"]
                 continue
             md, meta = convertir_pagina(cliente, ruta_pdf, indice, cache, max_pasadas)
-            # figuras detectadas -> recorte real
+            # figuras detectadas -> recorte real + extracción de datos con verificación
             if meta["figuras"]:
                 figuras = recortar_figuras_pagina(ruta_pdf, indice, salida / "figuras")
                 for k, fig in enumerate(figuras, start=1):
                     nombre = f"figuras/{fig.name}"
+                    bloque = bloque_markdown(extraer_figura(cliente, fig), nombre)
                     if f"[FIGURA:" in md:
-                        md = re.sub(r"\[FIGURA:[^\]]+\]", f"![Figura]({nombre})", md, count=1)
+                        md = re.sub(r"\[FIGURA:[^\]]+\]", bloque, md, count=1)
                     else:
-                        md += f"\n\n![Figura]({nombre})\n"
+                        md += f"\n\n{bloque}\n"
             paginas_md[indice] = md
             flog.write(json.dumps({"pagina": pag, "ok": True, "md": md, **meta}) + "\n")
             flog.flush()

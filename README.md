@@ -1,8 +1,8 @@
 # pdf2md
 
-**[ES]** Conversor de PDF a Markdown **determinista**: cada página se lee con un modelo de visión (VLM OpenAI-compatible, por defecto `qwen3.6`) y el resultado pasa un **verificador determinista** (tablas bien formadas, aritmética de columnas numéricas). Si no cuadra, otra pasada con el informe de errores como feedback. Los gráficos, diagramas y fotografías que no se pueden reconstruir como texto se **recortan del PDF como imagen** y se referencian desde el markdown. Nada se pierde.
+**[ES]** Conversor de PDF a Markdown **determinista**: cada página se lee con un modelo de visión (VLM OpenAI-compatible, por defecto `qwen3.6`) y el resultado pasa un **verificador determinista** (tablas bien formadas, aritmética de columnas numéricas). Si no cuadra, otra pasada con el informe de errores como feedback. Los gráficos, diagramas y fotografías se **recortan del PDF como imagen** y, cuando contienen datos, se **extraen como tabla markdown + OCR verificando** (donut que no suma 100 → reintento → fallback a imagen). Nada se pierde.
 
-**[EN]** Deterministic PDF → Markdown converter: each page is read by a vision model (any OpenAI-compatible VLM, `qwen3.6` by default) and the result goes through a **deterministic verifier** (well-formed tables, numeric-column arithmetic). If it doesn't add up, another pass runs with the error report as feedback. Charts, diagrams and photos that can't be reconstructed as text are **cropped from the PDF as images** and referenced from the markdown. Nothing gets lost.
+**[EN]** Deterministic PDF → Markdown converter: each page is read by a vision model (any OpenAI-compatible VLM, `qwen3.6` by default) and the result goes through a **deterministic verifier** (well-formed tables, numeric-column arithmetic). If it doesn't add up, another pass runs with the error report as feedback. Charts, diagrams and photos are **cropped from the PDF as images** and, when they carry data, **extracted as a markdown table + verified OCR** (a donut that doesn't sum to 100 → retry → image fallback). Nothing gets lost.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Aurora](https://img.shields.io/badge/Design-Aurora%20v10-2563eb)](https://github.com/Ntizar/Aurora)
@@ -14,7 +14,8 @@ PDF ──▶ rasterizar (pypdfium2, cache por página)
     ──▶ leer con VLM ──▶ markdown
     ──▶ verificar (tablas + aritmética) ──┬─ ok ──▶ siguiente página
                                           └─ fallo ──▶ otra pasada con feedback (máx. 3)
-    ──▶ [FIGURA: ...] ──▶ recorte real del PDF ──▶ figuras/pagNNN-figN.png
+    ──▶ [FIGURA: ...] ──▶ recorte real del PDF ──▶ extracción de datos (JSON verificado:
+         donut suma ~100, barras no idénticas, tabla filas iguales) ──▶ tabla MD + OCR + PNG
     ──▶ ensamblar documento.md  (+ .log.jsonl reanudable)
 ```
 
