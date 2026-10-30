@@ -1,0 +1,20 @@
+flowchart TD
+    PDF["PDF de entrada<br/>texto · tablas · gráficos · fotos"]
+    RAS["Rasterizado<br/>pypdfium2 · página a PNG 2x · caché en disco"]
+    VLM["Lectura por visión<br/>VLM OpenAI-compatible · qwen3.6 por defecto"]
+    VER{"Verificador determinista<br/>tablas bien formadas · aritmética de columnas"}
+    FIG["Recorte real de la figura<br/>del PDF a PNG"]
+    EXT{"Extracción de datos<br/>JSON + OCR verificada<br/>donut ~ 100 · barras no idénticas"}
+    TAB["Tabla MD + OCR en detalles<br/>+ PNG de respaldo"]
+    OUT["documento.md<br/>+ figuras PNG<br/>+ .log.jsonl reanudable"]
+    PDF --> RAS
+    RAS --> VLM
+    VLM --> VER
+    VER -- "ok · siguiente página" --> OUT
+    VER -- "fallo: informe de errores como feedback, máx. 3" --> VLM
+    VER -- "[FIGURA: ...]" --> FIG
+    FIG --> EXT
+    EXT -- "ok" --> TAB
+    EXT -- "fallo: reintento" --> FIG
+    EXT -- "agotado: fallback a imagen" --> TAB
+    TAB --> OUT
