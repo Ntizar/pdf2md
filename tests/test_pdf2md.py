@@ -70,7 +70,7 @@ class TestFiguras:
     def test_recorte_pdf_real(self):
         import pypdfium2 as pdfium
         from pdf2md.figuras import recortar_figuras_pagina
-        pdf = Path("/home/nan/Projects/CiafMD/pdfs/ES/IF-140109-190509-CIAF.pdf")
+        pdf = Path(__file__).resolve().parents[1] / "ejemplos" / "espana-2050-pag46-55.pdf"
         if not pdf.exists():
             print("skip: PDF de prueba no disponible")
             return
@@ -93,7 +93,7 @@ class TestPipeline:
                 self.llamadas += 1
                 return "| A | B |\n|---|---|\n| 1 | 2 |"
 
-        pdf = Path("/home/nan/Projects/CiafMD/pdfs/ES/IF-140109-190509-CIAF.pdf")
+        pdf = Path(__file__).resolve().parents[1] / "ejemplos" / "espana-2050-pag46-55.pdf"
         if not pdf.exists():
             print("skip: PDF de prueba no disponible")
             return
@@ -116,7 +116,7 @@ class TestPipeline:
                     return "| A | B |\n|---|---|\n| 1 |"  # tabla rota
                 return "| A | B |\n|---|---|\n| 1 | 2 |"
 
-        pdf = Path("/home/nan/Projects/CiafMD/pdfs/ES/IF-140109-190509-CIAF.pdf")
+        pdf = Path(__file__).resolve().parents[1] / "ejemplos" / "espana-2050-pag46-55.pdf"
         if not pdf.exists():
             print("skip: PDF de prueba no disponible")
             return
