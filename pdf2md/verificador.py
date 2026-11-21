@@ -44,10 +44,37 @@ def _celdas(fila: str) -> list[str]:
     return [c.strip() for c in m.group(1).split("|")]
 
 
+def _parsear_num(txt: str) -> float | None:
+    """Parsea un número en formato español (1.234,56), inglés (2.5) o mixto. None si no lo es."""
+    t = txt.strip().replace("%", "").replace("€", "").strip()
+    if not t:
+        return None
+    signo = 1.0
+    if t[0] in "+-":
+        signo = -1.0 if t[0] == "-" else 1.0
+        t = t[1:].strip()
+    if not t:
+        return None
+    # con ambos separadores, el último es el decimal («1.234,56»); con uno solo:
+    # coma = decimal; punto = decimal si deja ≤2 cifras, miles si deja más («2.000»)
+    if "." in t and "," in t:
+        if t.rfind(",") > t.rfind("."):
+            t = t.replace(".", "").replace(",", ".")
+        else:
+            t = t.replace(",", "")
+    elif "," in t:
+        t = t.replace(",", ".")
+    elif "." in t:
+        partes = t.split(".")
+        if not (len(partes) == 2 and 0 < len(partes[1]) <= 2):
+            t = t.replace(".", "")
+    if not re.fullmatch(r"\d+(\.\d+)?", t):
+        return None
+    return signo * float(t)
+
+
 def _es_numero(txt: str) -> bool:
-    t = txt.strip().replace(".", "").replace(",", ".").replace("%", "").replace("€", "").strip()
-    t = t.lstrip("+-")
-    return bool(re.fullmatch(r"\d+(\.\d+)?", t)) if t else False
+    return _parsear_num(txt) is not None
 
 
 def _verificar_tabla(tabla: list[str], inf: InformeVerificacion) -> None:
@@ -71,7 +98,7 @@ def _verificar_tabla(tabla: list[str], inf: InformeVerificacion) -> None:
 
 def _verificar_suma(valores: list[str], inf: InformeVerificacion, donde: str,
                     tabla: list[str] | None = None) -> None:
-    nums = [float(v.strip().replace(".", "").replace(",", ".").replace("%", "").replace("€", "")) for v in valores]
+    nums = [x for x in (_parsear_num(v) for v in valores) if x is not None]
     total = nums[-1]
     suma = sum(nums[:-1])
     if abs(suma - total) <= 0.01 * max(abs(total), 1):
@@ -79,8 +106,10 @@ def _verificar_suma(valores: list[str], inf: InformeVerificacion, donde: str,
     # Columna de series temporales u objetivos (2030, 2040, 2050...): valores crecientes
     # monótonos NO son una suma; no marcar. Salvo que la fila final sea un total declarado
     # (celda de texto con «total») y no cuadre.
+    # solo cuenta como fila de total si la primera celda EMPIEZA por la palabra
+    # «total»: «totalmente nuevo» no es un total (el \b evita el falso positivo)
     cabecera_total = any(
-        _celdas(f) and "total" in _celdas(f)[0].lower()
+        _celdas(f) and re.match(r"total\b", _celdas(f)[0].strip().lower())
         for f in tabla[2:]
     )
     monotona = all(b >= a for a, b in zip(nums, nums[1:])) or all(b <= a for a, b in zip(nums, nums[1:]))

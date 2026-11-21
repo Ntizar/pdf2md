@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 
-from .extraccion import bloque_markdown, extraer_figura
+from .extraccion import Extraccion, bloque_markdown, extraer_figura
 from .figuras import RE_FIGURA, recortar_figuras_pagina
 from .raster import a_base64, num_paginas, rasterizar_pagina
 from .verificador import verificar_markdown
@@ -23,6 +23,12 @@ Responde SOLO el markdown, sin bloque de código."""
 def _extraer_bloque(md: str) -> str:
     m = re.search(r"```(?:markdown)?\n(.*)```", md, re.S)
     return m.group(1).strip() if m else md.strip()
+
+
+def _sustituir_figura(md: str, bloque: str) -> str:
+    """Sustituye el primer marcador [FIGURA: ...] por el bloque.
+    lambda: el bloque NUNCA se interpreta como patrón de reemplazo (barras del OCR seguras)."""
+    return RE_FIGURA.sub(lambda m: bloque, md, count=1)
 
 
 def convertir_pagina(cliente, ruta_pdf: str | Path, indice: int, dir_cache: Path,
@@ -52,7 +58,8 @@ def convertir_pagina(cliente, ruta_pdf: str | Path, indice: int, dir_cache: Path
 def convertir_pdf(cliente, ruta_pdf: str | Path, dir_salida: str | Path, dir_cache: Path | None = None,
                   max_pasadas: int = 3, log_ruta: str | Path | None = None) -> Path:
     """Convierte un PDF completo. Cache/jsonl reanudable: las páginas ya registradas como ok no se repiten."""
-    ruta_pdf = Path(ruta_pdf)
+    ruta_pdf = Path(ruta_pdf).resolve()
+    clave_pdf = str(ruta_pdf)
     salida = Path(dir_salida)
     salida.mkdir(parents=True, exist_ok=True)
     cache = Path(dir_cache) if dir_cache else salida / ".cache"
@@ -63,10 +70,12 @@ def convertir_pdf(cliente, ruta_pdf: str | Path, dir_salida: str | Path, dir_cac
         for linea in log.read_text().splitlines():
             try:
                 reg = json.loads(linea)
-                if reg.get("ok"):
-                    hechas[reg["pagina"]] = reg
             except json.JSONDecodeError:
                 continue
+            # solo reutilizar registros del MISMO PDF: el log indexa por página y,
+            # sin identidad de origen, contaminaría entre PDFs convertidos al mismo dir
+            if reg.get("ok") and reg.get("pdf") == clave_pdf:
+                hechas[reg["pagina"]] = reg
     total = num_paginas(ruta_pdf)
     paginas_md: dict[int, str] = {}
     with log.open("a") as flog:
@@ -78,16 +87,22 @@ def convertir_pdf(cliente, ruta_pdf: str | Path, dir_salida: str | Path, dir_cac
             md, meta = convertir_pagina(cliente, ruta_pdf, indice, cache, max_pasadas)
             # figuras detectadas -> recorte real + extracción de datos con verificación
             if meta["figuras"]:
-                figuras = recortar_figuras_pagina(ruta_pdf, indice, salida / "figuras")
-                for k, fig in enumerate(figuras, start=1):
+                figuras = recortar_figuras_pagina(ruta_pdf, indice, salida / "figuras", dir_cache=cache)
+                for fig in figuras:
                     nombre = f"figuras/{fig.name}"
-                    bloque = bloque_markdown(extraer_figura(cliente, fig), nombre)
-                    if f"[FIGURA:" in md:
-                        md = re.sub(r"\[FIGURA:[^\]]+\]", bloque, md, count=1)
+                    ext = extraer_figura(cliente, fig)
+                    if ext.verificada:
+                        bloque = bloque_markdown(ext, nombre)
+                    else:
+                        # extracción agotada: solo la imagen garantizada; los datos no
+                        # verificados no se presentan en el documento como buenos
+                        bloque = bloque_markdown(Extraccion(), nombre)
+                    if "[FIGURA:" in md:
+                        md = _sustituir_figura(md, bloque)
                     else:
                         md += f"\n\n{bloque}\n"
             paginas_md[indice] = md
-            flog.write(json.dumps({"pagina": pag, "ok": True, "md": md, **meta}) + "\n")
+            flog.write(json.dumps({"pagina": pag, "pdf": clave_pdf, "ok": True, "md": md, **meta}) + "\n")
             flog.flush()
     partes = [paginas_md[i] for i in sorted(paginas_md)]
     doc_md = "\n\n".join(partes) + "\n"

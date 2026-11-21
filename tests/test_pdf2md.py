@@ -60,6 +60,34 @@ class TestVerificador:
 """
         assert verificar_markdown(md).ok
 
+    def test_serie_monotona_con_totalmente_ok(self):
+        # «totalmente» en una celda de datos no es un total declarado
+        md = """| Nota | serie |
+|---|---|
+| totalmente nuevo | 5 |
+| b | 10 |
+| c | 20 |
+"""
+        assert verificar_markdown(md).ok
+
+    def test_decimales_mezclados_ok(self):
+        md = """| Concepto | Euros |
+|---|---|
+| A | 1,5 |
+| B | 2.5 |
+| Total | 4.0 |
+"""
+        assert verificar_markdown(md).ok
+
+    def test_miles_espanol_ok(self):
+        md = """| Concepto | Euros |
+|---|---|
+| A | 1.234,56 |
+| B | 765,44 |
+| Total | 2.000 |
+"""
+        assert verificar_markdown(md).ok
+
 
 class TestFiguras:
     def test_patron_figura(self):
@@ -79,6 +107,12 @@ class TestFiguras:
             figuras = recortar_figuras_pagina(pdf, 5, tmp)
             for f in figuras:
                 assert f.exists() and f.stat().st_size > 500
+
+    def test_orden_lectura_topdown(self):
+        from pdf2md.figuras import _fusionar
+        arriba = (100.0, 300.0, 200.0, 340.0)
+        abajo = (100.0, 100.0, 200.0, 140.0)
+        assert _fusionar([arriba, abajo])[0] == arriba
 
 
 class TestPipeline:
@@ -125,3 +159,49 @@ class TestPipeline:
         assert meta["pasadas"] == 2
         assert meta["verificado"]
         assert "problemas verificables" in cliente.prompts[1]
+
+    def test_sustitucion_figura_con_barras(self):
+        from pdf2md.pipeline import _sustituir_figura
+        out = _sustituir_figura("x [FIGURA: a] y", "OCR \\1 con barra")
+        assert out == "x OCR \\1 con barra y"
+
+    def test_log_no_contamina_entre_pdfs(self, tmp_path):
+        from PIL import Image
+        from pdf2md.pipeline import convertir_pdf
+
+        class ClienteFalso:
+            def __init__(self, texto):
+                self.texto = texto
+                self.llamadas = 0
+
+            def chatear(self, prompt, imagen_b64=None, max_tokens=4000, response_json=False):
+                self.llamadas += 1
+                return f"| {self.texto} | B |\n|---|---|\n| 1 | 2 |"
+
+        pdf = Path(__file__).resolve().parents[1] / "ejemplos" / "espana-2050-pag46-55.pdf"
+        if not pdf.exists():
+            print("skip: PDF de prueba no disponible")
+            return
+        mini = tmp_path / "mini.pdf"
+        Image.new("RGB", (10, 20), "white").save(mini)
+        c1 = ClienteFalso("PRIMERA")
+        convertir_pdf(c1, pdf, tmp_path)
+        c2 = ClienteFalso("SEGUNDA")
+        destino = convertir_pdf(c2, mini, tmp_path)
+        # el mini tiene 1 página: se convierte de verdad, no se reutiliza el otro PDF
+        assert c2.llamadas == 1
+        assert "SEGUNDA" in destino.read_text()
+
+    def test_cache_distingue_ficheros(self, tmp_path):
+        from PIL import Image
+        from pdf2md.raster import rasterizar_pagina
+        pdf = Path(__file__).resolve().parents[1] / "ejemplos" / "espana-2050-pag46-55.pdf"
+        if not pdf.exists():
+            print("skip: PDF de prueba no disponible")
+            return
+        mini = tmp_path / "mini.pdf"
+        Image.new("RGB", (10, 20), "white").save(mini)
+        p1 = rasterizar_pagina(pdf, 0, tmp_path)
+        p2 = rasterizar_pagina(mini, 0, tmp_path)
+        assert p1 != p2
+        assert p1.stat().st_size != p2.stat().st_size
